@@ -1,4 +1,4 @@
-!/usr/bin/env bash
+#!/usr/bin/env bash
 source ~/.evoenv
 
 unset NUXT_DAPIADDRESSES

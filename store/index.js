@@ -31,11 +31,65 @@ const getInitState = () => {
     identityId: null,
     walletBalance: -1,
     redemptionTxs: {},
+    L1: { UTXOS: {} },
   }
 }
 export const state = () => getInitState()
 
 export const getters = {
+  pledgeUTXOExistsOnL1: (state) => (pledge) => {
+    // console.log('pledge onl1 :>> ', pledge)
+    // console.log('state.L1.UTXOS onl1 :>> ', state.L1.UTXOS)
+    const pledgeFromAddressUTXOS =
+      state.L1.UTXOS[pledge._pledgeFromAddress] || []
+    const utxoExists = pledgeFromAddressUTXOS.filter((L1UTXO) => {
+      if (
+        L1UTXO.vout === pledge._tx.inputs[0].outputIndex &&
+        L1UTXO.txid === pledge._tx.inputs[0].prevTxId &&
+        L1UTXO.satoshis === pledge._satoshis &&
+        L1UTXO.scriptPubKey === pledge._tx.inputs[0].output.script
+      ) {
+        // console.log('L1UTXO :>> ', L1UTXO.scriptPubKey)
+        // console.log('pledge :>> ', pledge._tx.inputs[0].output.script)
+        // console.log('L1UTXO :>> ', L1UTXO.satoshis)
+        // console.log('pledge :>> ', pledge._satoshis)
+
+        return true
+      }
+    })
+
+    console.log('utxoExists :>> ', utxoExists)
+
+    return utxoExists.length > 0
+  },
+  getUserPledges(state, getters) {
+    if (!state.identityId) return ''
+
+    const dppCache = Object.entries(state.dppCache)
+
+    console.log('dppCache', dppCache)
+    const pledges = []
+
+    for (let idx = 0; idx < dppCache.length; idx++) {
+      // check if dppCache.pledge.ownerId
+      const pledge = { ...dppCache[idx][1] }
+
+      if (pledge.$type !== 'pledge') continue
+      const itexists = getters.pledgeUTXOExistsOnL1(pledge)
+      console.log('etters', itexists)
+      // debugger
+      if (
+        pledge.$ownerId === state.identityId &&
+        pledge.$type === 'pledge' &&
+        pledge._isFullySigned &&
+        getters.pledgeUTXOExistsOnL1(pledge)
+      ) {
+        pledges.push(pledge)
+      }
+    }
+
+    return pledges
+  },
   getMyUsername(state) {
     if (!state.identityId) return ''
 
@@ -58,7 +112,7 @@ export const getters = {
     // TODO refactor to getMyIdentityId
     return state.identityId
   },
-  getSumPledges: (state) => (campaignId) => {
+  getSumPledges: (state, getters) => (campaignId) => {
     if (!campaignId) return -1 // throw new Error('Not a valid campaignId') // TODO use regexp
     console.log(campaignId)
     console.log('state.dppCache[campaignId] :>> ', state.dppCache)
@@ -73,7 +127,8 @@ export const getters = {
       if (
         element.$type === 'pledge' &&
         element.campaignId === campaignId &&
-        element._isFullySigned
+        element._isFullySigned &&
+        getters.pledgeUTXOExistsOnL1(element)
       )
         sum += element._tx.inputs[0].output.satoshis
     }
@@ -88,7 +143,7 @@ export const getters = {
       )
     return state.dppCache[docId]
   },
-  getCampaignPledges: (state) => (campaignId) => {
+  getCampaignPledges: (state, getters) => (campaignId) => {
     const dppCache = Object.entries(state.dppCache)
 
     const pledges = []
@@ -99,7 +154,8 @@ export const getters = {
       if (
         pledge.$type === 'pledge' &&
         pledge.campaignId === campaignId &&
-        pledge._isFullySigned
+        pledge._isFullySigned &&
+        getters.pledgeUTXOExistsOnL1(pledge)
       ) {
         pledge.utxo = JSON.parse(Buffer.from(pledge.utxo, 'base64').toString()) // TODO remove deprecated
 
@@ -128,6 +184,11 @@ export const getters = {
 }
 
 export const mutations = {
+  setL1UTXOS(state, { address, utxos }) {
+    console.log('set state utxos :>> ', utxos)
+    Vue.set(state.L1.UTXOS, address, utxos)
+    console.log('state.L1.UTXOS :>> ', state.L1.UTXOS)
+  },
   setMyUsername(state, userName) {
     state.userName = userName
   },
@@ -167,6 +228,56 @@ export const mutations = {
 }
 
 export const actions = {
+  async getUnusedAddress({ dispatch }) {
+    await dispatch('isAccountReady')
+    return client.account.getUnusedAddress()
+  },
+  async revokePledge({ commit, dispatch }, pledge) {
+    const specialFeatureKey = client.account.keyChain.HDPrivateKey.derive(
+      "m/44'/1'/123'/1'/1" // TODO production LIVENET switch to 9/5
+    )
+
+    const privateKey = specialFeatureKey.privateKey.toString()
+
+    console.log('privateKey :>> ', privateKey)
+
+    const input = pledge._tx.inputs[0]
+
+    const pledgeUtxo = {
+      txId: input.prevTxId,
+      outputIndex: input.outputIndex,
+      address: pledge._pledgeFromAddress,
+      script: input.output.script,
+      satoshis: pledge._satoshis,
+    }
+
+    console.log('pledgeUtxo :>> ', pledgeUtxo)
+
+    const myWalletAddress = client.account.getUnusedAddress()
+
+    const tx = new Dashcore.Transaction()
+      .from([pledgeUtxo])
+      .to(myWalletAddress.address, pledgeUtxo.satoshis - 250) // TODO dynamic fee amount
+      .sign([privateKey])
+
+    console.log('tx :>> ', tx)
+
+    const txId = await client.account.broadcastTransaction(tx)
+
+    console.log('txId :>> ', txId)
+
+    dispatch('fetchL1UTXOSByAddress', pledge._pledgeFromAddress)
+  },
+  async fetchL1UTXOSByAddress({ commit, dispatch }, address) {
+    try {
+      const pledgeFromAddressUTXOS = await this.$axios.get(
+        `${process.env.INSIGHTAPI}/insight-api/addr/${address}/utxo` // TODO use env var
+      )
+      commit('setL1UTXOS', { address, utxos: pledgeFromAddressUTXOS.data })
+    } catch (e) {
+      dispatch('showSnackbar', { text: e.message })
+    }
+  },
   async fetchUsernameByOwnerId({ commit, state }, ownerId) {
     if (state.dpns[ownerId]) return
 
@@ -252,7 +363,11 @@ export const actions = {
       )
 
       if (client.wallet) {
-        client.account = await timeFunction(client.wallet.getAccount())
+        console.log('get account start')
+        client.account = await timeFunction(
+          client.wallet.getAccount({ debug: true })
+        )
+        console.log('getaccountend')
 
         console.log(
           'init Funding address',
@@ -457,11 +572,21 @@ export const actions = {
       const processedDocuments = documents.map((doc) => {
         doc._tx = JSON.parse(Buffer.from(doc.tx, 'hex'))
 
-        doc._isFullySigned = new Dashcore.Transaction(doc._tx).isFullySigned()
+        const tx = new Dashcore.Transaction(doc._tx)
+
+        doc._isFullySigned = tx.isFullySigned()
+
+        doc._pledgeFromAddress = tx.inputs[0].script
+          .toAddress(Dashcore.Networks.testnet)
+          .toString() // TODO deploy switch ti livenet
+
+        console.log('doc._pledgeFromAddress :>> ', doc._pledgeFromAddress)
 
         doc._satoshis = doc._tx.inputs[0].output.satoshis
 
         doc._dash = Unit.fromSatoshis(doc._satoshis).toBTC()
+
+        dispatch('fetchL1UTXOSByAddress', doc._pledgeFromAddress)
 
         return doc
       })
@@ -500,7 +625,7 @@ export const actions = {
     // const pledgeFromAddress = client.account.getUnusedAddress('internal') // TODO use special derivation path
 
     const specialFeatureKey = client.account.keyChain.HDPrivateKey.derive(
-      `m/9'/1'/4'/1'/1` // TODO production LIVENET switch to 9/5
+      "m/44'/1'/123'/1'/1" // TODO production LIVENET switch to 9/5
     )
 
     const privateKey = specialFeatureKey.privateKey.toString()
@@ -522,15 +647,7 @@ export const actions = {
       ],
     })
 
-    console.log('prepare transaction:')
-    console.dir(transaction.outputs[0])
-    console.dir(transaction.outputs[0]._script)
-    console.dir(transaction.outputs[0]._satoshis)
-    // const pledgeUtxo = transaction.outputs[0];
-
-    // console.log('input script:');
-    // console.dir(transaction.inputs[0]._script);
-    console.log('Broadcasting pledgeUtxo txs:')
+    console.log('Broadcasting pledgeUtxo tx:')
     const transactionId = await client.account.broadcastTransaction(transaction)
 
     const pledgeUtxo = {
@@ -557,9 +674,9 @@ export const actions = {
     // ])[0].privateKey
 
     const tx = new Dashcore.Transaction()
-      .from([pledgeUtxo]) // Feed information about what unspent outputs one can use
-      .to(campaignRecipient, parseInt(campaignSatoshis) - feeSatoshis) // Add an output with the given amount of satoshis
-      .sign([privateKey], 0x81) // Signs all the inputs it can
+      .from([pledgeUtxo])
+      .to(campaignRecipient, parseInt(campaignSatoshis) - feeSatoshis)
+      .sign([privateKey], 0x81)
 
     console.log(
       'tx :>> ',

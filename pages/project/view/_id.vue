@@ -84,6 +84,7 @@
                       getRedemptionTxId(campaignId) ||
                       getSumPledges(campaignId) >= campaign.amount
                     "
+                    :disabled="!getRedemptionTxId(campaignId)"
                     block
                     color="#00BCD4"
                     class="pledgedtext"
@@ -211,13 +212,15 @@ const Unit = Dashcore.Unit
 
 export default {
   data: () => {
-    console.log('this :>> ', this)
     return {
       campaignId: undefined,
       dialog: false,
       pledgeAmount: '',
       pledgeMessage: '',
       isConfirmLoading: false,
+      isRedeemed: false,
+      isDestroyed: false,
+      redeemLoopIterationsAfterDestroy: 0,
     }
   },
   computed: {
@@ -240,6 +243,23 @@ export default {
       )
     },
   },
+  destroyed() {
+    this.isDestroyed = true
+  },
+  updated() {
+    console.log(
+      'something updated',
+      this.getSumPledges(this.campaignId),
+      this.getRedemptionTxId(this.campaignId)
+    )
+    if (
+      this.getSumPledges(this.campaignId) >= this.campaign.amount &&
+      this.getRedemptionTxId(this.campaignId) === null
+    ) {
+      console.log('this project has enough backing, will redeem now:')
+      this.redeemTx({ campaignId: this.campaignId })
+    }
+  },
   async created() {
     this.campaignId = this.$route.params.id
 
@@ -249,6 +269,8 @@ export default {
       typeLocator: 'springboard.campaign',
       docId: this.campaignId,
     })
+
+    // this.loopGetSumPledges()
   },
   methods: {
     ...mapActions([
@@ -261,6 +283,25 @@ export default {
       'redeemTx',
       'fetchRedemptionState',
     ]),
+    // async loopGetSumPledges() {
+    //   console.log(
+    //     'this.getSumPledges(this.campaignId) :>> ',
+    //     this.getSumPledges(this.campaignId)
+    //   )
+
+    //   console.log('this.isDestroyed :>> ', this.isDestroyed)
+
+    //   if (this.getSumPledges(this.campaignId) >= this.campaign.amount) {
+    //     console.log('this project has enough backing, will redeem now:')
+    //     this.redeemTx({ campaignId: this.campaignId })
+    //     this.isRedeemed = true
+    //   }
+
+    //   if (this.isRedeemed === false && this.isDestroyed === true) {
+    //     await this.$sleep(1000)
+    //     this.loopGetSumPledges()
+    //   }
+    // },
     DuffsinDash(duffs) {
       return Unit.fromSatoshis(duffs).toBTC()
     },
@@ -322,9 +363,6 @@ export default {
       )
 
       console.log('this.campaign.amount :>> ', this.campaign.amount)
-
-      if (this.getSumPledges(this.campaignId) >= this.campaign.amount)
-        this.redeemTx({ campaignId: this.campaignId })
 
       this.dialog = false
       this.isConfirmLoading = false

@@ -97,11 +97,12 @@ export default {
     launch: false,
   }),
   computed: { ...mapGetters(['getIdentityId']) },
-  created() {
+  async created() {
     if (!this.getIdentityId) this.$router.push('/')
+    this.payoutAddress = (await this.getUnusedAddress()).address
   },
   methods: {
-    ...mapActions(['submitDocument']),
+    ...mapActions(['submitDocument', 'getUnusedAddress']),
     async submitCampaign() {
       this.launch = true
       const { title, description, amount, payoutAddress } = this

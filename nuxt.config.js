@@ -13,6 +13,8 @@ export default {
       ? { contractId: process.env.NUXT_DPNS_CONTRACT_ID }
       : undefined,
     LOCALNODE: !!process.env.NUXT_LOCALNODE,
+    INSIGHTAPI:
+      process.env.NUXT_INSIGHTAPI || 'https://testnet-insight.dashevo.org', // TODO use livenet URL
   },
   mode: 'spa',
   router: {

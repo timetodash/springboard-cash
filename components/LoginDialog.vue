@@ -1,17 +1,5 @@
 <template>
   <div>
-    <v-tooltip bottom>
-      <template v-slot:activator="{ on, attrs }">
-        <span
-          style="color: purple; size: 1.5em; font-weight: bolder"
-          v-bind="attrs"
-          v-on="on"
-        >
-          {{ getMyUsername }}
-        </span>
-      </template>
-      <span>{{ getMyWalletBalance }} Dash</span>
-    </v-tooltip>
     <v-btn
       color="cyan"
       class="ml-4 mr-2"
@@ -31,13 +19,26 @@
       >Log in</v-btn
     >
     <v-btn
-      v-if="getIdentityId || isLoggingIn"
+      v-if="isLoggingIn"
       right
       color="purple"
       class="ml-2"
       @click.stop="logout()"
-      >{{ isLoggingIn ? 'Cancel' : 'Log out' }}</v-btn
+      >Cancel</v-btn
     >
+    <v-menu v-if="getIdentityId" offset-y
+      ><template v-slot:activator="{ on, attrs }">
+        <v-btn color="purple" text v-bind="attrs" v-on="on"
+          >Account: {{ getMyUsername }}</v-btn
+        ></template
+      >
+      <v-list>
+        <v-list-item
+          >{{ Math.floor(getMyWalletBalance * 100) / 100 }} Dash</v-list-item
+        ></v-list
+      ><v-list-item @click="$router.push('/account')">My Account </v-list-item>
+      <v-list-item @click.stop="logout()">Log out</v-list-item>
+    </v-menu>
     <v-dialog
       v-model="showLoginDialog"
       vuetify-breakpoint-xs-only-
