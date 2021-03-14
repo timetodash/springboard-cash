@@ -14,6 +14,7 @@
               v-model="title"
               placeholder="To the moon"
               required
+              :rules="titleRules"
               class="pledged input_left"
               color="cyan"
             ></v-text-field>
@@ -27,6 +28,7 @@
               v-model="description"
               placeholder="The Cow Jumped Over the Moon, since the cow did, will Dash soon?"
               value="description"
+              :rules="descriptionRules"
               required
               color="cyan"
             ></v-textarea>
@@ -44,6 +46,7 @@
                   v-model="amount"
                   placeholder="2"
                   required
+                  :rules="amountRules"
                   class="pledged input_center ml-2"
                   color="cyan"
                 ></v-text-field>
@@ -62,6 +65,7 @@
               v-model="payoutAddress"
               placeholder="Payout Address"
               required
+              :rules="addressRules"
               style="font-weight: bolder; font-size: 25px"
               color="cyan"
             ></v-text-field>
@@ -72,6 +76,7 @@
             :loading="launch"
             style="color: white"
             large
+            :disabled="!isProjectValid"
             @click="submitCampaign"
             >Launch Project
           </v-btn>
@@ -87,6 +92,29 @@ import { mapActions, mapGetters } from 'vuex'
 const Dashcore = require('@dashevo/dashcore-lib')
 // eslint-disable-next-line no-unused-vars
 const Unit = Dashcore.Unit
+function isAddressValid(address) {
+  const patt = new RegExp('^y[1-9A-HJ-NP-Za-km-z]{33}$') // TODO support main net
+  return patt.test(address) || 'Not a valid Dash address'
+}
+
+function isValue(value) {
+  return !!value || 'Required'
+}
+
+function isAmountValid(amount) {
+  if (
+    Unit.fromBTC(amount).toSatoshis() >= 10000000 &&
+    Unit.fromBTC(amount).toSatoshis() <= 40000000000
+  ) {
+    return true
+  } else if (Unit.fromBTC(amount).toSatoshis() < 10000000) {
+    return 'Min amount is 0.1 Dash' // min campaign amount of $25 = 0.1 Dash @ $250/dash => 10000000 Satoshis
+  } else if (Unit.fromBTC(amount).toSatoshis() > 40000000000) {
+    return 'Max amount is 400 Dash' // max campaign amount of $100,000 = 400 Dash @ $250/dash => 40000000000 Satoshis
+  } else {
+    return 'Please enter a number between 0.1 and 400'
+  }
+}
 
 export default {
   data: () => ({
@@ -95,8 +123,33 @@ export default {
     amount: '',
     payoutAddress: '',
     launch: false,
+    addressRules: [isAddressValid],
+    amountRules: [isAmountValid],
+    titleRules: [isValue],
+    descriptionRules: [isValue],
   }),
-  computed: { ...mapGetters(['getIdentityId']) },
+  computed: {
+    ...mapGetters(['getIdentityId', 'getLatestDocument']),
+    isProjectValid() {
+      const addressResults = this.addressRules.map((fun) =>
+        fun(this.payoutAddress)
+      )
+      const amountResults = this.amountRules.map((fun) => fun(this.amount))
+      const titleResults = this.titleRules.map((fun) => fun(this.title))
+      const descriptionResults = this.descriptionRules.map((fun) =>
+        fun(this.description)
+      )
+
+      const rulesResults = [
+        ...addressResults,
+        ...amountResults,
+        ...titleResults,
+        ...descriptionResults,
+      ]
+
+      return rulesResults.every((value) => value === true)
+    },
+  },
   async created() {
     if (!this.getIdentityId) this.$router.push('/')
     this.payoutAddress = (await this.getUnusedAddress()).address

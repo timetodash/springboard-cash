@@ -37,9 +37,25 @@ const getInitState = () => {
 export const state = () => getInitState()
 
 export const getters = {
+  getLatestDocument: (state) => (docType) => {
+    const dppCache = Object.entries(state.dppCache)
+
+    const documents = []
+
+    for (let idx = 0; idx < dppCache.length; idx++) {
+      const element = { ...dppCache[idx][1] }
+      if (element.$type === docType) {
+        documents.push(element)
+      }
+    }
+
+    const mostRecentDoc = documents.sort((a, b) =>
+      a.$createdAt < b.$createdAt ? 1 : -1
+    )
+
+    return mostRecentDoc[0] ? mostRecentDoc[0].$createdAt : 0
+  },
   pledgeUTXOExistsOnL1: (state) => (pledge) => {
-    // console.log('pledge onl1 :>> ', pledge)
-    // console.log('state.L1.UTXOS onl1 :>> ', state.L1.UTXOS)
     const pledgeFromAddressUTXOS =
       state.L1.UTXOS[pledge._pledgeFromAddress] || []
     const utxoExists = pledgeFromAddressUTXOS.filter((L1UTXO) => {
@@ -49,16 +65,9 @@ export const getters = {
         L1UTXO.satoshis === pledge._satoshis &&
         L1UTXO.scriptPubKey === pledge._tx.inputs[0].output.script
       ) {
-        // console.log('L1UTXO :>> ', L1UTXO.scriptPubKey)
-        // console.log('pledge :>> ', pledge._tx.inputs[0].output.script)
-        // console.log('L1UTXO :>> ', L1UTXO.satoshis)
-        // console.log('pledge :>> ', pledge._satoshis)
-
         return true
       }
     })
-
-    console.log('utxoExists :>> ', utxoExists)
 
     return utxoExists.length > 0
   },
@@ -71,13 +80,11 @@ export const getters = {
     const pledges = []
 
     for (let idx = 0; idx < dppCache.length; idx++) {
-      // check if dppCache.pledge.ownerId
       const pledge = { ...dppCache[idx][1] }
 
       if (pledge.$type !== 'pledge') continue
       const itexists = getters.pledgeUTXOExistsOnL1(pledge)
       console.log('etters', itexists)
-      // debugger
       if (
         pledge.$ownerId === state.identityId &&
         pledge.$type === 'pledge' &&
@@ -122,7 +129,6 @@ export const getters = {
 
     for (let idx = 0; idx < dppCache.length; idx++) {
       const element = dppCache[idx][1]
-      // console.log('element', element)
 
       if (
         element.$type === 'pledge' &&
@@ -212,7 +218,6 @@ export const mutations = {
     state.snackbar.timestamp = Date.now()
   },
   setDppCache(state, { typeLocator, documents }) {
-    // const [app, docType] = typeLocator.split('.')
     if (!documents) throw new Error('SetDppCache cannot set ' + documents)
 
     console.log('setting cache documents :>> ', documents)
@@ -271,7 +276,7 @@ export const actions = {
   async fetchL1UTXOSByAddress({ commit, dispatch }, address) {
     try {
       const pledgeFromAddressUTXOS = await this.$axios.get(
-        `${process.env.INSIGHTAPI}/insight-api/addr/${address}/utxo` // TODO use env var
+        `${process.env.INSIGHTAPI}/insight-api/addr/${address}/utxo`
       )
       commit('setL1UTXOS', { address, utxos: pledgeFromAddressUTXOS.data })
     } catch (e) {
@@ -387,14 +392,6 @@ export const actions = {
 
         commit('setIdentityId', identityId)
 
-        // const identity = await client.platform.identities.get(identityId)
-        // const nameRegistration = await client.platform.names.register(
-        //   'delta.dash',
-        //   { dashUniqueIdentityId: identity.getId() },
-        //   identity
-        // )
-        // console.log('nameRegistration :>> ', nameRegistration)
-
         dispatch('fetchUsernameByOwnerId', identityId)
 
         dispatch('showSnackbar', { text: 'Login successful!', color: 'cyan' })
@@ -429,7 +426,6 @@ export const actions = {
         identity
       )
 
-      // Create the document
       const document = await platform.documents.create(
         typeLocator,
         identity,
@@ -510,12 +506,19 @@ export const actions = {
     }
   },
   async fetchDocuments(
-    { dispatch, commit },
+    { dispatch, getters, commit },
     {
       typeLocator,
       queryOpts = {
         limit: 1,
         startAt: 1,
+        where: [
+          [
+            '$createdAt',
+            '>',
+            getters.getLatestDocument(typeLocator.split('.')[1]),
+          ],
+        ],
       },
     }
   ) {
@@ -568,7 +571,6 @@ export const actions = {
       })
       return documents
     } else if (documents[0] && documents[0].$type === 'pledge') {
-      // TODO check utxo presence against blockchain
       const processedDocuments = documents.map((doc) => {
         doc._tx = JSON.parse(Buffer.from(doc.tx, 'hex'))
 
@@ -622,7 +624,6 @@ export const actions = {
     { campaignSatoshis, pledgeSatoshis, campaignRecipient }
   ) {
     await dispatch('isAccountReady')
-    // const pledgeFromAddress = client.account.getUnusedAddress('internal') // TODO use special derivation path
 
     const specialFeatureKey = client.account.keyChain.HDPrivateKey.derive(
       "m/44'/1'/123'/1'/1" // TODO production LIVENET switch to 9/5

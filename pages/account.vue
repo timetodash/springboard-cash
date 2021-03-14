@@ -5,6 +5,17 @@
         <span style="font-size: 24px; font-weight: 1100px">My Backings</span>
       </v-col>
     </v-row>
+    <v-card
+      v-if="getUserPledges.length === 0"
+      style="font-weight: normal; font-size: 18px"
+      min-height="200"
+      to="/"
+    >
+      <v-row align="center" justify="center" style="min-height: 200px">
+        You haven't backed any projects yet, click here to back your first
+        project!</v-row
+      ></v-card
+    >
     <MyBacking
       v-for="pledge in getUserPledges"
       :key="pledge.$id"
@@ -15,6 +26,16 @@
         <span style="font-size: 24px; font-weight: 1100px">My Projects</span>
       </v-col>
     </v-row>
+    <v-card
+      v-if="showUserCampaigns().length === 0"
+      style="font-weight: normal; font-size: 18px"
+      min-height="200"
+      to="/project/launch/"
+    >
+      <v-row align="center" justify="center" style="min-height: 200px">
+        Click here to launch your first project.</v-row
+      ></v-card
+    >
     <v-row>
       <v-col cols="12" class="pt-0">
         <v-card
@@ -37,24 +58,49 @@ import MyBacking from '~/components/MyBacking.vue'
 
 export default {
   components: { listCard, MyBacking },
-  data: () => ({}),
+  data: () => ({ isDestroyed: false }),
   computed: {
     ...mapGetters([
       'getCampaigns',
       'getCampaignPledges',
       'getUserPledges',
       'getDocumentById',
+      'getLatestDocument',
     ]),
+  },
+  destroyed() {
+    this.isDestroyed = true
   },
   async created() {
     await this.fetchDocuments({
       typeLocator: 'springboard.campaign',
       queryOpts: {
+        where: [
+          ['$createdAt', '>', this.getLatestDocument('campaign')],
+          [
+            '$ownerId',
+            '==',
+            this.$store.state.identityId ? this.$store.state.identityId : '',
+          ],
+        ],
         orderBy: [['$createdAt', 'desc']],
       },
     })
 
-    console.log('show cache', this.getUserPledges)
+    await this.fetchDocuments({
+      typeLocator: 'springboard.pledge',
+      queryOpts: {
+        where: [
+          ['$createdAt', '>', this.getLatestDocument('pledge')],
+          [
+            '$ownerId',
+            '==',
+            this.$store.state.identityId ? this.$store.state.identityId : '',
+          ],
+        ],
+        orderBy: [['$createdAt', 'desc']],
+      },
+    })
   },
   methods: {
     ...mapActions(['fetchDocuments', 'revokePledge']),

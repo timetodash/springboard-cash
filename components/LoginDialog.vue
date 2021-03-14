@@ -26,8 +26,22 @@
       @click.stop="logout()"
       >Cancel</v-btn
     >
-    <v-menu v-if="getIdentityId" offset-y
-      ><template v-slot:activator="{ on, attrs }">
+    <v-menu
+      v-if="getIdentityId"
+      offset-y
+      style="
+        background-color: white !important;
+        opacity: 1;
+        z-index: 999999999 !important;
+      "
+      ><template
+        v-slot:activator="{ on, attrs }"
+        style="
+          background-color: white !important;
+          opacity: 1;
+          z-index: 999999999 !important;
+        "
+      >
         <v-btn color="purple" text v-bind="attrs" v-on="on"
           >Account: {{ getMyUsername }}</v-btn
         ></template
@@ -41,7 +55,7 @@
     </v-menu>
     <v-dialog
       v-model="showLoginDialog"
-      vuetify-breakpoint-xs-only-
+      :fullscreen="$vuetify.breakpoint.xs"
       max-width="600px"
     >
       <v-card>

@@ -39,7 +39,7 @@ export default {
     ...mapActions(['revokePledge']),
     showCampaignName(pledge) {
       const campaign = this.getDocumentById(pledge.campaignId)
-      return campaign || pledge.$id
+      return campaign || { title: pledge.$id }
     },
     async revokePledgeWrapper(pledge) {
       this.isRevoking = true

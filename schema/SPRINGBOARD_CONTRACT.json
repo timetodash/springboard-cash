@@ -1,119 +1,136 @@
 {
-    "pledge": {
-        "indices": [
-            {
-                "properties": [
-                    {
-                        "$createdAt": "desc"
-                    }
-                ]
-            },
-            {
-                "properties": [
-                    {
-                        "campaignId": "desc"
-                    }
-                ]
-            }
-        ],
-        "required": [
-            "$createdAt",
-            "utxo",
-            "tx",
-            "campaignId"
-        ],
-        "properties": {
-            "utxo": {
-                "type": "string"
-            },
-            "tx": {
-                "type": "string"
-            },
-            "campaignId": {
-                "type": "string",
-                "maxLength": 44,
-                "minLength": 42
-            },
-            "message": {
-                "type": "string"
-            }
-        },
-        "additionalProperties": false
+  "pledge": {
+    "indices": [
+      {
+        "properties": [
+          {
+            "$createdAt": "desc"
+          }
+        ]
+      },
+      {
+        "properties": [
+          {
+            "campaignId": "desc"
+          }
+        ]
+      },
+      {
+        "properties": [
+          {
+            "$ownerId": "asc"
+          }
+        ]
+      }
+    ],
+    "required": [
+      "$createdAt",
+      "utxo",
+      "tx",
+      "campaignId"
+    ],
+    "properties": {
+      "utxo": {
+        "type": "string"
+      },
+      "tx": {
+        "type": "string"
+      },
+      "campaignId": {
+        "type": "string",
+        "maxLength": 44,
+        "minLength": 42
+      },
+      "message": {
+        "type": "string"
+      }
     },
-    "campaign": {
-        "indices": [
-            {
-                "properties": [
-                    {
-                        "$createdAt": "desc"
-                    }
-                ]
-            }
-        ],
-        "required": [
-            "$createdAt",
-            "title",
-            "description",
-            "amount",
-            "payoutAddress"
-        ],
-        "properties": {
-            "title": {
-                "type": "string"
-            },
-            "description": {
-                "type": "string"
-            },
-            "amount": {
-                "type": "string"
-            },
-            "payoutAddress": {
-                "type": "string"
-            }
-        },
-        "additionalProperties": false
+    "additionalProperties": false
+  },
+  "campaign": {
+    "indices": [
+      {
+        "properties": [
+          {
+            "$createdAt": "desc"
+          }
+        ]
+      },
+      {
+        "properties": [
+          {
+            "$ownerId": "asc"
+          }
+        ]
+      }
+    ],
+    "required": [
+      "$createdAt",
+      "title",
+      "description",
+      "amount",
+      "payoutAddress"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "string"
+      },
+      "payoutAddress": {
+        "type": "string",
+        "pattern": "^y[1-9A-HJ-NP-Za-km-z]{33}",
+        "minLength": 34,
+        "maxLength": 34
+      }
     },
-    "redemptionTx": {
-        "indices": [
-            {
-                "properties": [
-                    {
-                        "$createdAt": "desc"
-                    }
-                ]
-            },
-            {
-                "properties": [
-                    {
-                        "campaignId": "asc"
-                    }
-                ]
-            },
-            {
-                "properties": [
-                    {
-                        "txId": "asc"
-                    }
-                ]
-            }
-        ],
-        "required": [
-            "$createdAt",
-            "campaignId",
-            "txId"
-        ],
-        "properties": {
-            "campaignId": {
-                "type": "string",
-                "maxLength": 44,
-                "minLength": 42
-            },
-            "txId": {
-                "type": "string",
-                "maxLength": 64,
-                "minLength": 64
-            }
-        },
-        "additionalProperties": false
-    }
+    "additionalProperties": false
+  },
+  "redemptionTx": {
+    "indices": [
+      {
+        "properties": [
+          {
+            "$createdAt": "desc"
+          }
+        ]
+      },
+      {
+        "properties": [
+          {
+            "campaignId": "asc"
+          }
+        ]
+      },
+      {
+        "properties": [
+          {
+            "txId": "asc"
+          }
+        ]
+      }
+    ],
+    "required": [
+      "$createdAt",
+      "campaignId",
+      "txId"
+    ],
+    "properties": {
+      "campaignId": {
+        "type": "string",
+        "maxLength": 44,
+        "minLength": 42
+      },
+      "txId": {
+        "type": "string",
+        "maxLength": 64,
+        "minLength": 64
+      }
+    },
+    "additionalProperties": false
+  }
 }

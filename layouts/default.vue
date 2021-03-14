@@ -39,15 +39,15 @@ export default {
       mnemonic:
         // 'ritual zebra tiny hundred syrup bullet captain royal dinosaur void blind hotel',
         // 'cheese negative throw yard erase bitter struggle alter barrel found else velvet',
-        'mushroom dove remember inmate garlic inflict fetch swallow write sponsor wall manage',
-      // 'essay love suffer inquiry buffalo advance glue boil arrive glove clutch oyster',
+        // 'mushroom dove remember inmate garlic inflict fetch swallow write sponsor wall manage',
+        'essay love suffer inquiry buffalo advance glue boil arrive glove clutch oyster',
       // 'bless fluid disagree depart trade donor uniform dust month side dad tray',
       // 'luggage vacuum solution element rigid have provide enough defense champion frog camera',
       // 'catch fine embrace frequent prepare cruise relax faculty artwork yard sustain report',
       // 'neither neither apple collect warm trip luggage path tenant test liquid effort',
       // 'neck neither tired bargain pizza quantum anxiety wait hire network nasty joke',
-      //  'pride dolphin pluck orphan crunch erode soft damage metal corn risk slot'
-      //  'injury slender heart powder shove canal crash exile nest cement impact chair'
+      // 'pride dolphin pluck orphan crunch erode soft damage metal corn risk slot',
+      // 'injury slender heart powder shove canal crash exile nest cement impact chair',
       // 'shock immense hand zoo mean seat vehicle artwork element month story water',
       // 'economy annual cool rally minute toast gas oyster august lamp sail isolate',
     })
