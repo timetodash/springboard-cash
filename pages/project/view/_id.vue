@@ -32,7 +32,7 @@
               aria-autocomplete="false
               "
             >
-              {{ campaign.description }}
+              <div v-linkify="campaign.description" />
             </v-card-text>
           </v-card>
         </v-col>
@@ -207,6 +207,8 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
+// eslint-disable-next-line no-unused-vars
+import * as linkify from 'linkifyjs'
 
 const Dashcore = require('@dashevo/dashcore-lib')
 // eslint-disable-next-line no-unused-vars
@@ -323,6 +325,7 @@ export default {
       await this.$sleep(1000)
       this.loopCheckPledges()
     },
+
     DuffsinDash(duffs) {
       return Unit.fromSatoshis(duffs).toBTC()
     },

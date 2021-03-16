@@ -21,9 +21,23 @@
           </v-col>
         </v-row>
 
-        <v-row>
-          <v-col cols="12">
+        <v-row class="pb-0">
+          <v-col cols="12" class="pb-0 mb-n5">
             <span class="pledgedtext">Description</span>
+            <Picker
+              v-if="showEmojiPicker"
+              v-click-outside="closeEmojiPicker"
+              color="#008de4"
+              set="twitter"
+              title="Pick your emoji"
+              emoji="point_up"
+              :class="{
+                widescreen: $vuetify.breakpoint.mdAndUp,
+                narrowscreen: $vuetify.breakpoint.mdAndDown,
+                mobile: $vuetify.breakpoint.xs,
+              }"
+              @select="addEmoji"
+            />
             <v-textarea
               v-model="description"
               placeholder="The Cow Jumped Over the Moon, since the cow did, will Dash soon?"
@@ -32,6 +46,13 @@
               required
               color="cyan"
             ></v-textarea>
+            <v-btn
+              style="margin-top: -105px"
+              icon
+              @click="showEmojiPicker = !showEmojiPicker"
+            >
+              <v-icon color="#008de4">mdi-emoticon-happy-outline </v-icon>
+            </v-btn>
           </v-col>
         </v-row>
 
@@ -88,6 +109,7 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
+import { Picker } from 'emoji-mart-vue'
 
 const Dashcore = require('@dashevo/dashcore-lib')
 // eslint-disable-next-line no-unused-vars
@@ -117,6 +139,9 @@ function isAmountValid(amount) {
 }
 
 export default {
+  components: {
+    Picker,
+  },
   data: () => ({
     title: '',
     description: '',
@@ -127,6 +152,7 @@ export default {
     amountRules: [isAmountValid],
     titleRules: [isValue],
     descriptionRules: [isValue],
+    showEmojiPicker: false,
   }),
   computed: {
     ...mapGetters(['getIdentityId', 'getLatestDocument']),
@@ -156,6 +182,12 @@ export default {
   },
   methods: {
     ...mapActions(['submitDocument', 'getUnusedAddress']),
+    closeEmojiPicker() {
+      this.showEmojiPicker = false
+    },
+    addEmoji(event) {
+      this.description = this.description + event.colons
+    },
     async submitCampaign() {
       this.launch = true
       const { title, description, amount, payoutAddress } = this
@@ -177,3 +209,24 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.widescreen {
+  position: fixed;
+  bottom: 0;
+  margin-bottom: 61px;
+  background: white;
+  z-index: 999999999;
+}
+.narrowscreen {
+  position: fixed;
+  bottom: 0;
+  background: white;
+  z-index: 999999999;
+}
+.mobile {
+  position: absolute;
+  background: white;
+  z-index: 999999999;
+}
+</style>

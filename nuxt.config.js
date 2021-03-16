@@ -85,6 +85,7 @@ export default {
    */
   plugins: [
     { src: '~/plugins/timeago.js' },
+    '~/plugins/directives.js',
     { src: '~/plugins/utils.js' },
     { src: '~/plugins/persistedState.client.js' },
   ],

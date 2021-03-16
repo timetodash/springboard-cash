@@ -2,7 +2,7 @@
   <div>
     <v-container>
       <v-row dense>
-        <v-col v-for="(campaign, i) in getCampaigns" :key="i" cols="12">
+        <v-col v-for="campaign in getCampaigns" :key="campaign.$id" cols="12">
           <listCard :campaign="campaign" />
         </v-col>
       </v-row>
@@ -21,13 +21,6 @@ export default {
     ...mapGetters(['getCampaigns', 'getLatestDocument', 'getCampaignPledges']),
   },
   created() {
-    this.fetchDocuments({
-      typeLocator: 'springboard.campaign',
-      queryOpts: {
-        orderBy: [['$createdAt', 'desc']],
-      },
-    })
-
     this.loopFetchNewCampaigns()
   },
   methods: {

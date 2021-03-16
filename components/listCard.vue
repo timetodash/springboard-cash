@@ -27,7 +27,7 @@
                 {{ campaign.title }}
               </v-card-title>
               <v-card-text style="font-size: 20px; font-weight: 500px">
-                {{ campaign.description }}
+                <div v-linkify="campaign.description" />
               </v-card-text>
             </v-card>
           </v-col>
